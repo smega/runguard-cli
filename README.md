@@ -1,5 +1,8 @@
 # runguard-cli
 
+[![CI](https://github.com/smega/runguard-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/smega/runguard-cli/actions/workflows/ci.yml)
+[![Release](https://github.com/smega/runguard-cli/actions/workflows/release.yml/badge.svg)](https://github.com/smega/runguard-cli/actions/workflows/release.yml)
+
 The open-source client for [RunGuard](https://runguard.smega.eu) — cron/heartbeat
 job monitoring. This repository is the entire client: two small Go files,
 zero third-party dependencies, nothing hidden. If you're about to point a
@@ -12,26 +15,39 @@ audit.
 
 ## Install
 
-Prebuilt binaries for Linux and macOS (amd64/arm64) are published alongside
-each RunGuard release. Grab the latest one for your platform, make it
-executable, and put it on your `PATH`:
-
-```sh
-curl -fsSL https://runguard-download.smega.eu/stable/runguard-linux-amd64 -o runguard
-chmod +x runguard
-sudo mv runguard /usr/local/bin/runguard
-```
-
-(Swap `linux-amd64` for `linux-arm64`, `darwin-amd64`, or `darwin-arm64` as
-needed. Each binary has an accompanying `.sha256` file if you want to verify
-it by hand instead of trusting `self-update`'s built-in check.)
-
-Or build it yourself — it's stdlib-only, so all you need is Go 1.24+:
+**Build from source** — it's stdlib-only, so all you need is Go 1.24+:
 
 ```sh
 git clone https://github.com/smega/runguard-cli.git
 cd runguard-cli
 go build -o runguard .
+```
+
+**Or grab a prebuilt binary from a [GitHub Release](https://github.com/smega/runguard-cli/releases)**.
+Every tagged release is built directly from this source by the `release.yml`
+GitHub Actions workflow in this repo (not on a private machine), with a
+`.sha256` checksum published alongside each binary — so the build is
+reproducible and independently verifiable, not just something you have to
+take our word for:
+
+```sh
+curl -fsSL https://github.com/smega/runguard-cli/releases/latest/download/runguard-linux-amd64 -o runguard
+curl -fsSL https://github.com/smega/runguard-cli/releases/latest/download/runguard-linux-amd64.sha256 -o runguard.sha256
+sha256sum -c runguard.sha256
+chmod +x runguard
+sudo mv runguard /usr/local/bin/runguard
+```
+
+(Swap `linux-amd64` for `linux-arm64`, `darwin-amd64`, or `darwin-arm64` as needed.)
+
+**Or install the RunGuard-hosted build**, which is what `runguard self-update`
+uses and stays in lockstep with the version tracking on your RunGuard
+account:
+
+```sh
+curl -fsSL https://runguard-download.smega.eu/stable/runguard-linux-amd64 -o runguard
+chmod +x runguard
+sudo mv runguard /usr/local/bin/runguard
 ```
 
 ## Usage
@@ -137,6 +153,21 @@ end-to-end in one sitting, which is the actual goal here, more than
 Issues and PRs against the CLI itself (flags, retry behavior, platform
 support) are welcome. This repo doesn't include the server, so
 account/billing/dashboard questions belong on the main site instead.
+
+## Releasing (maintainers)
+
+Push a tag matching `v*.*.*` (e.g. `v0.1.5`) and the `release.yml` workflow
+builds linux/darwin amd64/arm64 binaries with that version baked in, computes
+a `.sha256` for each, and publishes them as a GitHub Release:
+
+```sh
+git tag v0.1.5
+git push origin v0.1.5
+```
+
+`workflow_dispatch` (manual run from the Actions tab) builds the same
+binaries as downloadable artifacts without creating a release — useful for
+testing the build itself.
 
 ## License
 
