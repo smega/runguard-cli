@@ -128,9 +128,12 @@ Flags for "register":
   --api=URL                 API base URL (default https://runguard.smega.eu).
   --name=NAME               Required. Job name -- re-running with the same name
                             returns the same job instead of creating a duplicate.
-  --interval=MINUTES        Expected heartbeat interval in minutes (default 60).
+  --interval=MINUTES        Expected heartbeat interval in minutes (default 60, ignored if --cron-expr is set).
   --grace=MINUTES           Grace period in minutes before a missed heartbeat alerts (default 0).
   --severity=LEVEL          low|normal|high|critical (default normal).
+  --cron-expr=EXPR          Standard 5-field cron expression (UTC), e.g. "0 3 * * *". Switches the
+                            job to schedule-based lateness checking instead of a plain interval --
+                            use this to match a Kubernetes CronJob's own spec.schedule exactly.
 `)
 }
 
@@ -352,6 +355,7 @@ type agentRegisterRequest struct {
 	IntervalMinutes int    `json:"interval_minutes,omitempty"`
 	GraceMinutes    int    `json:"grace_minutes,omitempty"`
 	Severity        string `json:"severity,omitempty"`
+	CronExpr        string `json:"cron_expr,omitempty"`
 }
 
 type agentRegisterResponse struct {
@@ -369,9 +373,10 @@ func runRegister(args []string) {
 	token := fs.String("token", "", "Agent token from the account page (or RUNGUARD_AGENT_TOKEN env var)")
 	apiBase := fs.String("api", defaultAPIBase, "API base URL")
 	name := fs.String("name", "", "Job name (required)")
-	interval := fs.Int("interval", 60, "Expected heartbeat interval in minutes")
+	interval := fs.Int("interval", 60, "Expected heartbeat interval in minutes (ignored if --cron-expr is set)")
 	grace := fs.Int("grace", 0, "Grace period in minutes")
 	severity := fs.String("severity", "", "low|normal|high|critical")
+	cronExpr := fs.String("cron-expr", "", "Standard 5-field cron expression (UTC); switches the job to schedule-based lateness checking instead of a plain interval")
 	timeoutSeconds := fs.Int("timeout", 10, "HTTP timeout in seconds")
 
 	fs.Usage = func() {
@@ -395,7 +400,8 @@ func runRegister(args []string) {
 		os.Exit(1)
 	}
 
-	if *interval <= 0 {
+	finalCronExpr := strings.TrimSpace(*cronExpr)
+	if finalCronExpr == "" && *interval <= 0 {
 		*interval = 60
 	}
 	if *grace < 0 {
@@ -407,6 +413,7 @@ func runRegister(args []string) {
 		IntervalMinutes: *interval,
 		GraceMinutes:    *grace,
 		Severity:        strings.TrimSpace(*severity),
+		CronExpr:        finalCronExpr,
 	}
 	bodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
