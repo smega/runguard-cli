@@ -24,7 +24,13 @@ import (
 //	go build -ldflags "-X main.Version=v0.1.4"
 var Version = "0.1.4" // override via -ldflags at build time
 
-const defaultAPIBase = "https://runguard.smega.eu"
+// defaultAPIBase is a placeholder — override it at build time with
+// -ldflags "-X main.defaultAPIBase=https://your-runguard-instance.example"
+// (same mechanism as Version above), or override per-invocation with
+// --api / RUNGUARD_API. Never set to a real value here: this is public
+// source, and a real default would silently point every unconfigured
+// build at one specific RunGuard instance.
+var defaultAPIBase = "https://runguard.example.com"
 
 // heartbeatPayload mirrors the RunGuard backend's HeartbeatPayload struct
 // field for field. These two must stay in sync by hand -- there's no shared
@@ -45,6 +51,13 @@ type heartbeatPayload struct {
 // stringSliceFlag lets --tag be repeated (--tag=a --tag=b) and/or
 // comma-separated (--tag=a,b) on a single flag.FlagSet.
 type stringSliceFlag []string
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
 
 func (s *stringSliceFlag) String() string { return strings.Join(*s, ",") }
 func (s *stringSliceFlag) Set(v string) error {
@@ -112,7 +125,7 @@ Common flags for "wrap":
 
   --key=RUNGUARD_KEY        Required (or RUNGUARD_KEY env var). Job heartbeat key.
   --endpoint=URL            Optional. Full heartbeat endpoint.
-                            If not set, defaults to https://runguard.smega.eu/hb/KEY
+                            If not set, defaults to <api-base>/hb/KEY
   --timeout=SECONDS         HTTP timeout in seconds (default 10).
   --truncate=BYTES          Max bytes kept from the end of stdout/stderr each (default 4000).
   --env=NAME                Optional environment label (e.g. "prod", "staging").
@@ -125,7 +138,8 @@ Flags for "register":
 
   --token=TOKEN             Required (or RUNGUARD_AGENT_TOKEN env var). Agent token
                             from the account page.
-  --api=URL                 API base URL (default https://runguard.smega.eu).
+  --api=URL                 API base URL (or RUNGUARD_API env var). Required unless this
+                            binary was built with a default baked in via -ldflags.
   --name=NAME               Required. Job name -- re-running with the same name
                             returns the same job instead of creating a duplicate.
   --interval=MINUTES        Expected heartbeat interval in minutes (default 60, ignored if --cron-expr is set).
@@ -190,7 +204,7 @@ func runWrap(args []string) {
 			fmt.Fprintln(os.Stderr, "Error: either --endpoint or --key (or RUNGUARD_KEY / RUNGUARD_ENDPOINT) must be set.")
 			os.Exit(1)
 		}
-		finalEndpoint = "https://runguard.smega.eu/hb/" + finalKey
+		finalEndpoint = strings.TrimRight(defaultAPIBase, "/") + "/hb/" + finalKey
 	}
 
 	maxBytes := *truncateBytes
@@ -371,7 +385,7 @@ type agentRegisterResponse struct {
 func runRegister(args []string) {
 	fs := flag.NewFlagSet("register", flag.ExitOnError)
 	token := fs.String("token", "", "Agent token from the account page (or RUNGUARD_AGENT_TOKEN env var)")
-	apiBase := fs.String("api", defaultAPIBase, "API base URL")
+	apiBase := fs.String("api", envOr("RUNGUARD_API", defaultAPIBase), "API base URL (or RUNGUARD_API env var)")
 	name := fs.String("name", "", "Job name (required)")
 	interval := fs.Int("interval", 60, "Expected heartbeat interval in minutes (ignored if --cron-expr is set)")
 	grace := fs.Int("grace", 0, "Grace period in minutes")

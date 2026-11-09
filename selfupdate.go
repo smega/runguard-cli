@@ -16,11 +16,17 @@ import (
 	"strings"
 )
 
-const (
-	defaultVersionsAPI  = "https://runguard.smega.eu/api/public/cli/versions"
-	defaultChannel      = "stable"
-	defaultDownloadBase = "https://runguard-download.smega.eu"
+// defaultVersionsAPI and defaultDownloadBase are placeholders — override at
+// build time with -ldflags "-X main.defaultVersionsAPI=... -X
+// main.defaultDownloadBase=..." (same mechanism as Version in main.go), or
+// per-invocation with --api / --download-base. See the comment on
+// defaultAPIBase in main.go for why there's no real default here.
+var (
+	defaultVersionsAPI  = "https://runguard.example.com/api/public/cli/versions"
+	defaultDownloadBase = "https://runguard-downloads.example.com"
 )
+
+const defaultChannel = "stable"
 
 // versionsAPIResponse is the shape of defaultVersionsAPI's JSON response.
 // Kept intentionally minimal: version string, channel, and a per-platform
