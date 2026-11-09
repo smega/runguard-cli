@@ -41,15 +41,8 @@ sudo mv runguard /usr/local/bin/runguard
 
 (Swap `linux-amd64` for `linux-arm64`, `darwin-amd64`, or `darwin-arm64` as needed.)
 
-**Or install from your own RunGuard instance's hosted build**, if it serves
-one — this is what `runguard self-update` uses and stays in lockstep with
-the version tracking on your RunGuard account:
-
-```sh
-curl -fsSL https://your-runguard-instance.example/stable/runguard-linux-amd64 -o runguard
-chmod +x runguard
-sudo mv runguard /usr/local/bin/runguard
-```
+Once installed, `runguard self-update` keeps it current by pulling new
+releases from this same GitHub repo — no separate download host involved.
 
 ## Usage
 
@@ -94,7 +87,7 @@ The request body contains:
 - `env` — only if you passed `--env=`. An arbitrary label you chose (e.g. `"prod"`); not auto-detected.
 - `tags` — only if you passed `--tag=`, plus an automatic `retried:N` tag if `--retry` caused extra attempts.
 - `agent_version` — the CLI's own version string (e.g. `"0.1.4"`), so RunGuard can flag jobs on old/unsupported agent versions.
-- `stdout_tail` / `stderr_tail` — the **last `--truncate` bytes** (default 4000) of the command's stdout and stderr, captured separately. This is genuinely the tail end of whatever your command printed — nothing is added, redacted, or filtered by the CLI itself. If your command prints secrets, those secrets end up in this field. The server additionally caps how much of this it stores per plan tier; the CLI-side `--truncate` is a client-side cap on top of that.
+- `stdout_tail` / `stderr_tail` — the **last `--truncate` bytes** (default 4000) of the command's stdout and stderr, captured separately. This is genuinely the tail end of whatever your command printed — nothing is added, redacted, or filtered by the CLI itself. If your command prints secrets, those secrets end up in this field. The server additionally caps how much of this it stores; the CLI-side `--truncate` is a client-side cap on top of that.
 - `ts` — a UTC timestamp taken right after the command finishes.
 
 What it does **not** send: no hostname, no environment variables (other than
@@ -135,16 +128,17 @@ token at all).
 
 ### `runguard self-update`
 
-Fetches version metadata and a binary from the configured download host
-over plain HTTPS GET requests — no data about your machine is sent as part
-of this beyond what's inherent in making an HTTP request (IP, User-Agent).
-The downloaded binary's SHA256 checksum is verified before it replaces the
-currently running binary; if no checksum is available or it doesn't match,
-the update is refused rather than installed anyway.
+Fetches release metadata and a binary from GitHub's public Releases API
+(`api.github.com/repos/<repo>/releases/...`) over plain HTTPS GET requests
+— no data about your machine is sent as part of this beyond what's
+inherent in making an HTTP request (IP, User-Agent). The downloaded
+binary's SHA256 checksum is verified before it replaces the currently
+running binary; if no checksum is available or it doesn't match, the
+update is refused rather than installed anyway.
 
 ## Why this is a separate, open repo
 
-The RunGuard server (billing, dashboards, alert routing, storage) stays
+The RunGuard server (dashboards, alert routing, storage) stays
 closed-source — that's the product. This CLI is just an HTTP client that
 runs on your infrastructure, so there's no reason it should be a black box.
 Keeping it in its own dependency-free module also means it's easy to read
