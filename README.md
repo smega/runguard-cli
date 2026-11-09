@@ -3,8 +3,9 @@
 [![CI](https://github.com/smega/runguard-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/smega/runguard-cli/actions/workflows/ci.yml)
 [![Release](https://github.com/smega/runguard-cli/actions/workflows/release.yml/badge.svg)](https://github.com/smega/runguard-cli/actions/workflows/release.yml)
 
-The open-source client for [RunGuard](https://runguard.smega.eu) — cron/heartbeat
-job monitoring. This repository is the entire client: two small Go files,
+The open-source client for RunGuard — cron/heartbeat job monitoring, point
+it at wherever your own RunGuard instance is hosted. This repository is the
+entire client: two small Go files,
 zero third-party dependencies, nothing hidden. If you're about to point a
 binary at your cron jobs, you should be able to read exactly what it does
 before you trust it. That's what this repo is for.
@@ -40,12 +41,12 @@ sudo mv runguard /usr/local/bin/runguard
 
 (Swap `linux-amd64` for `linux-arm64`, `darwin-amd64`, or `darwin-arm64` as needed.)
 
-**Or install the RunGuard-hosted build**, which is what `runguard self-update`
-uses and stays in lockstep with the version tracking on your RunGuard
-account:
+**Or install from your own RunGuard instance's hosted build**, if it serves
+one — this is what `runguard self-update` uses and stays in lockstep with
+the version tracking on your RunGuard account:
 
 ```sh
-curl -fsSL https://runguard-download.smega.eu/stable/runguard-linux-amd64 -o runguard
+curl -fsSL https://your-runguard-instance.example/stable/runguard-linux-amd64 -o runguard
 chmod +x runguard
 sudo mv runguard /usr/local/bin/runguard
 ```
